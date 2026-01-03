@@ -153,7 +153,7 @@ BM.UI = {
     const list = type === 'keyword' ? this.sidebarState.keywords : this.sidebarState.sources;
     
     if (val && !list.includes(val)) {
-      list.push(val);
+      list.unshift(val);
       this.renderTags(type);
       input.value = '';
       this.saveSidebarSettings();
