@@ -119,7 +119,10 @@ BM.UI = {
     sidebar.className = 'bm-filter-sidebar'; // Default: left -300px
     
     sidebar.innerHTML = `
-      <div class="bm-toggle-tab" id="bm-toggle-tab" title="Mở/Đóng bộ lọc">⚙️</div>
+      <div class="bm-toggle-tab" id="bm-toggle-tab" title="Mở/Đóng bộ lọc">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+      </div>
+
       <div class="bm-sidebar-header">
         <h3>Cấu hình Bộ lọc</h3>
       </div>
@@ -272,18 +275,11 @@ BM.UI = {
       setTimeout(() => {
           document.getElementById('bm-filter-sidebar').classList.add('open');
           document.body.classList.add('bm-body-pushed');
-          document.getElementById('bm-toggle-tab').textContent = '❮'; // Collapse icon
       }, 10);
     } else {
       sidebar.classList.toggle('open');
       document.body.classList.toggle('bm-body-pushed');
-      
-      // Update icon based on state
-      if (sidebar.classList.contains('open')) {
-        btn.textContent = '❮'; 
-      } else {
-        btn.textContent = '❯'; // Expand icon
-      }
     }
+
   }
 };
