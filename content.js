@@ -327,9 +327,331 @@ async function initExtension() {
   }
 }
 
+
 // Khởi chạy extension khi trang đã tải
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initExtension);
 } else {
   initExtension();
 }
+
+/* --- SIDEBAR & SETTINGS LOGIC --- */
+
+// Inject CSS cho Sidebar
+function injectSidebarStyles() {
+  const style = document.createElement('style');
+  style.textContent = `
+    .bm-filter-sidebar {
+      position: fixed;
+      top: 0;
+      left: -320px; /* Bắt đầu bên ngoài màn hình bên trái */
+      width: 300px;
+      height: 100vh;
+      background: #ffffff;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+      z-index: 999999;
+      transition: left 0.3s ease;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .bm-filter-sidebar.open {
+      left: 0;
+    }
+    
+    .bm-sidebar-header {
+      padding: 15px 20px;
+      background: #f8f9fa;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .bm-sidebar-header h3 {
+      margin: 0;
+      font-size: 16px;
+      color: #333;
+    }
+    
+    .bm-close-btn {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #666;
+      padding: 0 5px;
+    }
+    
+    .bm-sidebar-content {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    
+    .bm-form-group {
+      margin-bottom: 20px;
+    }
+    
+    .bm-form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      font-size: 14px;
+      color: #444;
+    }
+    
+    .bm-input-wrapper {
+      display: flex;
+      gap: 5px;
+    }
+    
+    .bm-input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    
+    .bm-btn {
+      padding: 8px 15px;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    
+    .bm-btn:hover {
+      background: #2980b9;
+    }
+    
+    .bm-btn-save {
+      width: 100%;
+      margin-top: 10px;
+      background: #2ecc71;
+    }
+    
+    .bm-btn-save:hover {
+      background: #27ae60;
+    }
+
+    .bm-tags-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      padding: 8px;
+      border: 1px solid #eee;
+      border-radius: 4px;
+      min-height: 40px;
+      margin-top: 5px;
+      background: #fafafa;
+    }
+
+    .bm-tag {
+      display: inline-flex;
+      align-items: center;
+      background-color: #e0e0e0;
+      color: #333;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+    }
+
+    .bm-tag-remove {
+      margin-left: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      color: #666;
+    }
+    
+    .bm-tag-remove:hover {
+      color: #000;
+    }
+    
+    .bm-status-msg {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 13px;
+      min-height: 18px;
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+// Tạo Sidebar DOM
+function createSidebar() {
+  const sidebar = document.createElement('div');
+  sidebar.id = 'bm-filter-sidebar';
+  sidebar.className = 'bm-filter-sidebar';
+  
+  sidebar.innerHTML = `
+    <div class="bm-sidebar-header">
+      <h3>Cấu hình Bộ lọc</h3>
+      <button class="bm-close-btn" id="bm-close-sidebar">&times;</button>
+    </div>
+    <div class="bm-sidebar-content">
+      <div class="bm-form-group">
+        <label>Từ khóa chặn</label>
+        <div class="bm-input-wrapper">
+          <input type="text" id="bm-keyword-input" class="bm-input" placeholder="Nhập từ khóa...">
+          <button id="bm-add-keyword" class="bm-btn">Thêm</button>
+        </div>
+        <div id="bm-keywords-list" class="bm-tags-container"></div>
+      </div>
+      
+      <div class="bm-form-group">
+        <label>Nguồn chặn</label>
+        <div class="bm-input-wrapper">
+          <input type="text" id="bm-source-input" class="bm-input" placeholder="Nhập nguồn...">
+          <button id="bm-add-source" class="bm-btn">Thêm</button>
+        </div>
+        <div id="bm-sources-list" class="bm-tags-container"></div>
+      </div>
+      
+      <div class="bm-form-group">
+        <label>Độ mờ tin bị ẩn: <span id="bm-opacity-value">0.2</span></label>
+        <input type="range" id="bm-opacity-input" min="0" max="1" step="0.1" value="0.2" style="width: 100%">
+      </div>
+
+      <div class="bm-form-group">
+        <label>CSS Selector (Nâng cao)</label>
+        <input type="text" id="bm-selector-input" class="bm-input" value=".bm-card">
+      </div>
+      
+      <div id="bm-status" class="bm-status-msg"></div>
+    </div>
+  `;
+  
+  document.body.appendChild(sidebar);
+  
+  // Binding Events
+  document.getElementById('bm-close-sidebar').addEventListener('click', toggleSidebar);
+  document.getElementById('bm-add-keyword').addEventListener('click', () => addTag('keyword'));
+  document.getElementById('bm-keyword-input').addEventListener('keypress', (e) => e.key === 'Enter' && addTag('keyword'));
+  
+  document.getElementById('bm-add-source').addEventListener('click', () => addTag('source'));
+  document.getElementById('bm-source-input').addEventListener('keypress', (e) => e.key === 'Enter' && addTag('source'));
+  
+  // Auto-save on opacity change (using 'change' for performance on slide end)
+  document.getElementById('bm-opacity-input').addEventListener('change', (e) => {
+    saveSidebarSettings();
+  });
+  
+  document.getElementById('bm-opacity-input').addEventListener('input', (e) => {
+    document.getElementById('bm-opacity-value').textContent = e.target.value;
+    // Optional: Live preview opacity if desired, but waiting for save is consistent
+  });
+
+  // Auto-save on selector change
+  document.getElementById('bm-selector-input').addEventListener('change', () => {
+    saveSidebarSettings();
+  });
+
+  // Load initial settings
+  loadSidebarSettings();
+}
+
+let sidebarState = {
+  keywords: [],
+  sources: []
+};
+
+function renderTags(type) {
+  const container = document.getElementById(type === 'keyword' ? 'bm-keywords-list' : 'bm-sources-list');
+  const list = type === 'keyword' ? sidebarState.keywords : sidebarState.sources;
+  
+  container.innerHTML = '';
+  list.forEach((item, index) => {
+    const tag = document.createElement('div');
+    tag.className = 'bm-tag';
+    tag.innerHTML = `
+      <span>${item}</span>
+      <span class="bm-tag-remove" data-type="${type}" data-index="${index}">&times;</span>
+    `;
+    container.appendChild(tag);
+  });
+  
+  // Add remove events
+  container.querySelectorAll('.bm-tag-remove').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const idx = parseInt(e.target.dataset.index);
+      const t = e.target.dataset.type;
+      if (t === 'keyword') sidebarState.keywords.splice(idx, 1);
+      else sidebarState.sources.splice(idx, 1);
+      renderTags(t);
+      saveSidebarSettings(); // Auto-save on remove
+    });
+  });
+}
+
+function addTag(type) {
+  const input = document.getElementById(type === 'keyword' ? 'bm-keyword-input' : 'bm-source-input');
+  const val = input.value.trim();
+  const list = type === 'keyword' ? sidebarState.keywords : sidebarState.sources;
+  
+  if (val && !list.includes(val)) {
+    list.push(val);
+    renderTags(type);
+    input.value = '';
+    saveSidebarSettings(); // Auto-save on add
+  }
+}
+
+async function loadSidebarSettings() {
+  const config = await getConfig();
+  sidebarState.keywords = config.keywords || [];
+  sidebarState.sources = config.sources || [];
+  
+  renderTags('keyword');
+  renderTags('source');
+  
+  document.getElementById('bm-opacity-input').value = config.opacity || '0.2';
+  document.getElementById('bm-opacity-value').textContent = config.opacity || '0.2';
+  document.getElementById('bm-selector-input').value = config.selector || '.bm-card';
+}
+
+async function saveSidebarSettings() {
+  const settings = {
+    keywords: sidebarState.keywords,
+    sources: sidebarState.sources,
+    opacity: document.getElementById('bm-opacity-input').value,
+    selector: document.getElementById('bm-selector-input').value
+  };
+  
+  await chrome.storage.sync.set(settings);
+  cachedConfig = null; // Clear cache
+  
+  const status = document.getElementById('bm-status');
+  status.textContent = 'Đã lưu & áp dụng!';
+  status.style.color = 'green';
+  
+  // Re-run filter immediately
+  await hideNewsItems();
+  
+  setTimeout(() => {
+    status.textContent = '';
+  }, 1500);
+}
+
+function toggleSidebar() {
+  const sidebar = document.getElementById('bm-filter-sidebar');
+  if (!sidebar) {
+    injectSidebarStyles();
+    createSidebar();
+    // Small delay to allow DOM insertion before adding class for transition
+    setTimeout(() => document.getElementById('bm-filter-sidebar').classList.add('open'), 10);
+  } else {
+    sidebar.classList.toggle('open');
+  }
+}
+
+// Listen for messages from background script
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === "TOGGLE_SIDEBAR") {
+    toggleSidebar();
+  }
+});
