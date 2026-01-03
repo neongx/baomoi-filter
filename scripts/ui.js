@@ -14,18 +14,21 @@ BM.UI = {
       .bm-filter-sidebar {
         position: fixed;
         top: 0;
-        left: -320px;
+        left: -300px;
         width: 300px;
         height: 100vh;
         background: #ffffff;
-        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        box-shadow: none;
         z-index: 999999;
-        transition: left 0.3s ease;
+        transition: left 0.3s ease, box-shadow 0.3s ease;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         display: flex;
         flex-direction: column;
       }
-      .bm-filter-sidebar.open { left: 0; }
+      .bm-filter-sidebar.open { 
+        left: 0; 
+        box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+      }
       .bm-sidebar-header {
         padding: 15px 20px;
         background: #f8f9fa;
@@ -48,6 +51,30 @@ BM.UI = {
       .bm-tag-remove { margin-left: 5px; cursor: pointer; font-weight: bold; color: #666; }
       .bm-tag-remove:hover { color: #000; }
       .bm-status-msg { margin-top: 10px; text-align: center; font-size: 13px; min-height: 18px; }
+      
+      /* Hanging Toggle Tab */
+      .bm-toggle-tab {
+        position: absolute;
+        top: 60px; /* Align near header */
+        right: -40px; /* Stick out */
+        width: 40px;
+        height: 40px;
+        background: #f8f9fa; /* Match header or use accent */
+        border: 1px solid #eee;
+        border-left: none;
+        border-radius: 0 4px 4px 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        font-size: 20px;
+        color: #555;
+      }
+      .bm-toggle-tab:hover {
+        background: #eee;
+        color: #333;
+      }
     `;
     document.head.appendChild(style);
   },
@@ -57,14 +84,15 @@ BM.UI = {
 
     this.injectSidebarStyles();
     
+    // Create Sidebar
     const sidebar = document.createElement('div');
     sidebar.id = 'bm-filter-sidebar';
-    sidebar.className = 'bm-filter-sidebar';
+    sidebar.className = 'bm-filter-sidebar'; // Default: left -320px
     
     sidebar.innerHTML = `
+      <div class="bm-toggle-tab" id="bm-toggle-tab" title="Mở/Đóng bộ lọc">⚙️</div>
       <div class="bm-sidebar-header">
         <h3>Cấu hình Bộ lọc</h3>
-        <button class="bm-close-btn" id="bm-close-sidebar">&times;</button>
       </div>
       <div class="bm-sidebar-content">
         <div class="bm-form-group">
@@ -100,9 +128,10 @@ BM.UI = {
     `;
     
     document.body.appendChild(sidebar);
-    
+
     // Bind Events
-    document.getElementById('bm-close-sidebar').addEventListener('click', () => this.toggleSidebar());
+    document.getElementById('bm-toggle-tab').addEventListener('click', () => this.toggleSidebar());
+
     document.getElementById('bm-add-keyword').addEventListener('click', () => this.addTag('keyword'));
     document.getElementById('bm-keyword-input').addEventListener('keypress', (e) => e.key === 'Enter' && this.addTag('keyword'));
     
@@ -203,11 +232,22 @@ BM.UI = {
 
   toggleSidebar: function() {
     const sidebar = document.getElementById('bm-filter-sidebar');
+    const btn = document.getElementById('bm-toggle-tab');
+    
     if (!sidebar) {
       this.createSidebar();
-      setTimeout(() => document.getElementById('bm-filter-sidebar').classList.add('open'), 10);
+      setTimeout(() => {
+          document.getElementById('bm-filter-sidebar').classList.add('open');
+          document.getElementById('bm-toggle-tab').textContent = '❮'; // Collapse icon
+      }, 10);
     } else {
       sidebar.classList.toggle('open');
+      // Update icon based on state
+      if (sidebar.classList.contains('open')) {
+        btn.textContent = '❮'; 
+      } else {
+        btn.textContent = '❯'; // Expand icon
+      }
     }
   }
 };

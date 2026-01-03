@@ -12,6 +12,9 @@ async function initExtension() {
     // Thiết lập Observer
     BM.Observer.setupMutationObserver();
     
+    // Khởi tạo UI (Sidebar & Toggle Button)
+    BM.UI.createSidebar();
+    
     console.log('[Baomoi Filter] Ready');
   } catch (error) {
     console.error('[Baomoi Filter] Init error:', error);
