@@ -71,9 +71,28 @@ BM.UI = {
         font-size: 20px;
         color: #555;
       }
-      .bm-toggle-tab:hover {
-        background: #eee;
-        color: #333;
+      /* Snackbar */
+      .bm-snackbar {
+        visibility: hidden;
+        min-width: 250px;
+        background-color: #333;
+        color: #fff;
+        text-align: center;
+        border-radius: 4px;
+        padding: 12px;
+        position: fixed;
+        z-index: 1000000;
+        left: 20px;
+        bottom: 20px;
+        font-size: 14px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        opacity: 0;
+        transition: opacity 0.3s, bottom 0.3s;
+      }
+      .bm-snackbar.show {
+        visibility: visible;
+        opacity: 1;
+        bottom: 30px;
       }
     `;
     document.head.appendChild(style);
@@ -83,6 +102,14 @@ BM.UI = {
     if (document.getElementById('bm-filter-sidebar')) return;
 
     this.injectSidebarStyles();
+    
+    // Create Snackbar if not exists
+    if (!document.getElementById('bm-snackbar')) {
+      const snackbar = document.createElement('div');
+      snackbar.id = 'bm-snackbar';
+      snackbar.className = 'bm-snackbar';
+      document.body.appendChild(snackbar);
+    }
     
     // Create Sidebar
     const sidebar = document.createElement('div');
@@ -122,8 +149,6 @@ BM.UI = {
           <label>CSS Selector (Nâng cao)</label>
           <input type="text" id="bm-selector-input" class="bm-input" value=".bm-card">
         </div>
-        
-        <div id="bm-status" class="bm-status-msg"></div>
       </div>
     `;
     
@@ -208,6 +233,18 @@ BM.UI = {
     }
   },
 
+  showToast: function(message) {
+    const snackbar = document.getElementById('bm-snackbar');
+    if (!snackbar) return;
+    
+    snackbar.textContent = message;
+    snackbar.className = "bm-snackbar show";
+    
+    setTimeout(function(){ 
+      snackbar.className = snackbar.className.replace("show", ""); 
+    }, 3000);
+  },
+
   saveSidebarSettings: async function() {
     const settings = {
       keywords: this.sidebarState.keywords,
@@ -218,16 +255,10 @@ BM.UI = {
     
     await BM.Storage.saveConfig(settings);
     
-    const status = document.getElementById('bm-status');
-    status.textContent = 'Đã lưu & áp dụng!';
-    status.style.color = 'green';
+    this.showToast('Đã lưu & áp dụng cấu hình!');
     
     // Trigger re-filter
     await BM.Filter.hideNewsItems();
-    
-    setTimeout(() => {
-      status.textContent = '';
-    }, 1500);
   },
 
   toggleSidebar: function() {
