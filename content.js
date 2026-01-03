@@ -23,17 +23,33 @@ function getConfig() {
   });
 }
 
+// Hàm chuyển đổi wildcard pattern thành RegExp
+function createWildcardRegex(pattern) {
+  // Escape các ký tự đặc biệt của regex trừ *
+  const escaped = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
+  // Thay thế * bằng .* (khớp bất kỳ chuỗi nào)
+  const regexString = escaped.replace(/\*/g, '.*');
+  return new RegExp(regexString, 'i'); // 'i' flag để không phân biệt hoa thường
+}
+
 // Hàm kiểm tra xem một mục tin có nên ẩn không và trả về lý do
 function shouldHideItem(item, keywords, sources) {
   if (keywords.length === 0 && sources.length === 0) return { hide: false };
   
-  const textContent = item.innerText.toLowerCase();
+  const textContent = item.innerText; // Giữ nguyên case để regex xử lý 'i' flag hoặc toLowerCase tùy logic
+  const lowerTextContent = textContent.toLowerCase();
   
   // Kiểm tra từ khóa
   if (keywords.length > 0) {
-    const matchedKeywords = keywords.filter(keyword => 
-      textContent.includes(keyword.toLowerCase())
-    );
+    const matchedKeywords = keywords.filter(keyword => {
+      // Nếu có ký tự *, dùng regex
+      if (keyword.includes('*')) {
+        const regex = createWildcardRegex(keyword);
+        return regex.test(textContent);
+      }
+      // Ngược lại dùng includes như cũ
+      return lowerTextContent.includes(keyword.toLowerCase());
+    });
     
     if (matchedKeywords.length > 0) {
       return { 
