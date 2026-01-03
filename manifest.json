@@ -17,7 +17,14 @@
   "content_scripts": [
     {
       "matches": ["*://baomoi.com/*"],
-      "js": ["content.js"],
+      "js": [
+        "scripts/utils.js",
+        "scripts/storage.js",
+        "scripts/filter.js",
+        "scripts/ui.js",
+        "scripts/observer.js",
+        "content.js"
+      ],
       "run_at": "document_end"
     }
   ]
