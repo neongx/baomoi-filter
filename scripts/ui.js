@@ -55,7 +55,7 @@ BM.UI = {
       /* Hanging Toggle Tab */
       .bm-toggle-tab {
         position: absolute;
-        top: 60px; /* Align near header */
+        top: 8px; /* Align near header */
         right: -40px; /* Stick out */
         width: 40px;
         height: 40px;
@@ -89,10 +89,12 @@ BM.UI = {
         opacity: 0;
         transition: opacity 0.3s, bottom 0.3s;
       }
-      .bm-snackbar.show {
-        visibility: visible;
-        opacity: 1;
-        bottom: 30px;
+      /* Body Push Style */
+      body {
+        transition: margin-left 0.3s ease;
+      }
+      body.bm-body-pushed {
+        margin-left: 300px !important;
       }
     `;
     document.head.appendChild(style);
@@ -114,7 +116,7 @@ BM.UI = {
     // Create Sidebar
     const sidebar = document.createElement('div');
     sidebar.id = 'bm-filter-sidebar';
-    sidebar.className = 'bm-filter-sidebar'; // Default: left -320px
+    sidebar.className = 'bm-filter-sidebar'; // Default: left -300px
     
     sidebar.innerHTML = `
       <div class="bm-toggle-tab" id="bm-toggle-tab" title="Mở/Đóng bộ lọc">⚙️</div>
@@ -269,10 +271,13 @@ BM.UI = {
       this.createSidebar();
       setTimeout(() => {
           document.getElementById('bm-filter-sidebar').classList.add('open');
+          document.body.classList.add('bm-body-pushed');
           document.getElementById('bm-toggle-tab').textContent = '❮'; // Collapse icon
       }, 10);
     } else {
       sidebar.classList.toggle('open');
+      document.body.classList.toggle('bm-body-pushed');
+      
       // Update icon based on state
       if (sidebar.classList.contains('open')) {
         btn.textContent = '❮'; 
